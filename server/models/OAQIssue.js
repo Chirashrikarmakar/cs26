@@ -8,6 +8,7 @@ const CommunityReplySchema = new Schema({
   isPromoted:        { type: Boolean, default: false },
   upvotes:           { type: Number, default: 0 },
   downvotes:         { type: Number, default: 0 },
+  upvotedBy:         { type: [{ type: ObjectId, ref: 'User' }], default: [] },
   isPendingModeration:{ type: Boolean, default: false },
   isFlagged:         { type: Boolean, default: false },
   flaggedBy:         { type: ObjectId, ref: 'User' },
@@ -27,11 +28,16 @@ const OAQIssueSchema = new Schema({
   isPinned:     { type: Boolean, default: false },
   isFeatured:   { type: Boolean, default: false },
   upvoteCount:  { type: Number, default: 1 },
+  upvotedBy:    { type: [{ type: ObjectId, ref: 'User' }], default: [] },
+  downvotedBy:  { type: [{ type: ObjectId, ref: 'User' }], default: [] },
   resolvedBy:   { type: ObjectId, ref: 'User', default: null },
   raisedBy:     { type: ObjectId, ref: 'User', required: true },
   lockedBy:     { type: ObjectId, ref: 'User', default: null },
   lockExpiry:   { type: Date, default: null },
   duplicateOf:  { type: ObjectId, ref: 'OAQIssue', default: null },
+  lastActivityAt:    { type: Date, default: Date.now, index: true },
+  staleFlaggedAt:    { type: Date, default: null },
+  escalationReason:  { type: String, enum: ['POPULARITY', 'STALE', 'MENTOR', null], default: null },
   communityReplies: [CommunityReplySchema]
 }, { timestamps: true });
 

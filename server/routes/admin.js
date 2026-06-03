@@ -344,4 +344,15 @@ router.post('/sections', async (req, res) => {
   }
 });
 
+router.post('/stale/scan', async (req, res) => {
+  try {
+    const io = req.app.get('io');
+    const staleWatcher = require('../services/staleWatcher');
+    const escalated = await staleWatcher.scanAndEscalate(io);
+    res.json({ ok: true, escalated });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 module.exports = router;

@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useSocket } from '../context/SocketContext';
+import { api } from '../services/api';
 
 const LS_NEW_ISSUES = 'oaq_new_issue_count';
 
@@ -13,6 +14,7 @@ export default function Topbar({ view, onViewChange }) {
   const { theme, toggle } = useTheme();
   const { connected, socket } = useSocket();
   const [newIssueCount, setNewIssueCount] = useState(0);
+  const [staleCount, setStaleCount] = useState(0);
 
   useEffect(() => {
     const stored = parseInt(localStorage.getItem(LS_NEW_ISSUES) || '0', 10);
@@ -30,6 +32,26 @@ export default function Topbar({ view, onViewChange }) {
     socket.on('issue:created', handler);
     return () => socket.off('issue:created', handler);
   }, [socket, newIssueCount]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchStale = async () => {
+      try {
+        const data = await api.get('/oaq/stale-count');
+        if (!cancelled) setStaleCount(data.count || 0);
+      } catch {}
+    };
+    fetchStale();
+    const interval = setInterval(fetchStale, 5 * 60 * 1000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, []);
+
+  useEffect(() => {
+    if (!socket) return;
+    const handler = () => setStaleCount(c => c + 1);
+    socket.on('issue:stale-escalated', handler);
+    return () => socket.off('issue:stale-escalated', handler);
+  }, [socket]);
 
   const getViewFromPath = (pathname) => {
     if (pathname === '/') return 'oaq';
@@ -68,7 +90,7 @@ export default function Topbar({ view, onViewChange }) {
         {[
           ['oaq', 'OAQ'],
           ['threads', 'Threads'],
-          ['tracker', 'Tracker', newIssueCount],
+          ['tracker', 'Resolver', newIssueCount],
           ['sp', 'SP Wallet'],
           ...((user?.role === 'admin' || user?.role === 'superadmin') ? [['admin', 'Admin']] : [])
         ].map(([key, label, badge]) => (
@@ -79,13 +101,23 @@ export default function Topbar({ view, onViewChange }) {
             onClick={() => handleNavigate(key)}
           >
             {label}
-            {badge && badge > 0 && (
+            {badge > 0 && (
               <span style={{ position: 'absolute', top: -6, right: -6, background: 'var(--color-red)', color: '#fff', borderRadius: 20, fontSize: 10, fontWeight: 700, minWidth: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', fontFamily: 'var(--font-mono)' }}>
                 {badge > 99 ? '99+' : badge}
               </span>
             )}
           </button>
         ))}
+        {staleCount > 0 && (
+          <button
+            className="btn btn-sm"
+            onClick={() => handleNavigate('tracker')}
+            title={`${staleCount} unanswered query(ies) need immediate action`}
+            style={{ background: 'var(--color-red-light)', color: 'var(--color-red-dark)', borderColor: 'var(--color-red)', position: 'relative', display: 'flex', alignItems: 'center', gap: 4 }}
+          >
+            <span>🕐 Stale {staleCount}</span>
+          </button>
+        )}
         <button onClick={toggle} title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`} style={{ background: 'none', border: '1px solid var(--color-border)', borderRadius: 'var(--radius)', padding: '6px 10px', cursor: 'pointer', fontSize: 14, color: 'var(--color-text-primary)' }}>
           {theme === 'light' ? '🌙' : '☀️'}
         </button>
