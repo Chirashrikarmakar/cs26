@@ -191,14 +191,15 @@ oaq-system/
 ### 6. RAG AI Chat (`/api/rag`)
 - `POST /api/rag/chat` - Streaming RAG chat endpoint. Sends message history, retrieves relevant Q&A context from the knowledge base using MongoDB text search, and streams GPT-3.5-turbo responses. Falls back to knowledge-base-only answers if `OPENAI_API_KEY` is not set in `.env`.
 
-### 7. Admin & Moderation Operations (`/api/admin`)
+### 7. Duplicate Query Prevention (`/api/oaq`)
+- `POST /api/oaq/check-duplicate` - Similarity-scored duplicate check. Accepts `{ queryText }`, runs dual-algorithm scoring (word-level 50% + character overlap 50%) against all non-Duplicate issues, returns top 5 matches with matchScore percentage above 35% threshold.
+
+### 8. Admin & Moderation Operations (`/api/admin`)
+- `GET /api/admin/stats` - Fetch overall metrics (total issues, top holders, activity log).
 - `GET /api/admin/issues` - Paginated admin queries list with Pin/Feature/Delete triggers.
 - `GET /api/admin/users` - List all system accounts.
 - `POST /api/admin/users` - Direct creation of system accounts (Superadmin only).
 - `PATCH /api/admin/users/:id` - Adjust SP bank ledger balances or roles (Superadmin only).
-
-### 8. Duplicate Query Prevention (`/api/oaq`)
-- `POST /api/oaq/check-duplicate` - Similarity-scored duplicate check. Accepts `{ queryText }`, runs dual-algorithm scoring (word-level 50% + character overlap 50%) against all non-Duplicate issues, returns top 5 matches with matchScore percentage above 35% threshold.
 
 ---
 
