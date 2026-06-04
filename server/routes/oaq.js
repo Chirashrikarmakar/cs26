@@ -214,10 +214,20 @@ function intersectionSize(a, b) {
 
 router.get('/open-queries', async (req, res) => {
   try {
+    const { sort } = req.query;
+    let sortObj = { upvoteCount: -1, updatedAt: -1 };
+    if (sort === 'newest') {
+      sortObj = { createdAt: -1 };
+    } else if (sort === 'oldest') {
+      sortObj = { createdAt: 1 };
+    } else if (sort === 'votes') {
+      sortObj = { upvoteCount: -1, updatedAt: -1 };
+    }
+
     const issues = await OAQIssue.find({
       status: 'Open'
     })
-      .sort({ updatedAt: -1 })
+      .sort(sortObj)
       .limit(30)
       .populate('raisedBy', 'name')
       .populate('communityReplies.repliedBy', 'name');
@@ -502,7 +512,7 @@ router.patch('/issues/:id/replies/:replyId/vote', auth, async (req, res) => {
       reply.upvotes = (reply.upvotes || 0) + 1;
     }
 
-    issue.lastActivityAt = new Date();
+issue.lastActivityAt = new Date();
     await issue.save();
 
     const promoted = await checkAutoPromote(issue);
@@ -690,7 +700,7 @@ router.patch('/issues/:id/vote', auth, async (req, res) => {
       }
     }
 
-    issue.lastActivityAt = new Date();
+issue.lastActivityAt = new Date();
     await issue.save();
 
     if (spDelta !== 0 && creatorId) {

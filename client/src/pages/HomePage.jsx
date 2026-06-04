@@ -4,6 +4,7 @@ import BaselineOAQ from '../components/BaselineOAQ';
 import AccordionDrawer from '../components/AccordionDrawer';
 import SectionFilter from '../components/SectionFilter';
 import RaiseQueryModal from '../components/RaiseQueryModal';
+import OpenQueryCard from '../components/OpenQueryCard';
 import { api, oaq, getMyIssues } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
@@ -37,6 +38,7 @@ function ActivitySummary({ stats }) {
 export default function HomePage() {
   const [tab, setTab]           = useState('baseline');
   const [openQueries, setOpenQueries] = useState([]);
+  const [openSort, setOpenSort] = useState('votes');
   const [sections, setSections] = useState([]);
   const [searchQ, setSearchQ]   = useState('');
   const [searchResults, setSearchResults] = useState(null);
@@ -93,13 +95,13 @@ export default function HomePage() {
     };
   }, [socket, tab]);
 
-  const loadOpenQueries = () => {
-    oaq.getOpenQueries().then(setOpenQueries).catch(console.error);
+  const loadOpenQueries = (sort = openSort) => {
+    oaq.getOpenQueries(sort).then(setOpenQueries).catch(console.error);
   };
 
   useEffect(() => {
     if (tab === 'open') loadOpenQueries();
-  }, [tab]);
+  }, [tab, openSort]);
 
   useEffect(() => {
     if (!user) return;
@@ -198,7 +200,7 @@ export default function HomePage() {
               <div className="empty-state">
                 <div style={{ fontSize: 36, marginBottom: 8 }}>🔍</div>
                 <strong>No results found</strong>
-                If this is a genuinely new query, raise it in the Tracker.
+                If this is a genuinely new query, raise it in the Resolver.
                 {user && <><br /><button className="btn btn-primary" style={{ marginTop: 12 }} onClick={() => setShowRaise(true)}>+ Raise Query</button></>}
               </div>
             )}
@@ -258,7 +260,7 @@ export default function HomePage() {
           <>
             <div className="tabs">
               <button className={`tab-btn ${tab === 'baseline' ? 'active' : ''}`} onClick={() => setTab('baseline')}>
-                Baseline OAQ
+                OAQ Library
               </button>
               <button className={`tab-btn ${tab === 'trending' ? 'active' : ''}`} onClick={() => setTab('trending')}>
                 Top-15 Trending
@@ -272,18 +274,44 @@ export default function HomePage() {
             {tab === 'trending' && <TrendingFeed filteredSections={sections} />}
             {tab === 'open' && (
               <div>
-                <p className="section-label" style={{ marginBottom: 16 }}>
-                  Open Queries with Community Answers — upvote the best reply to auto-resolve (+50 SP)
-                </p>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+                  <p className="section-label" style={{ margin: 0 }}>
+                    Open Queries with Community Answers — upvote the best reply to auto-resolve (+50 SP)
+                  </p>
+                  <select
+                    value={openSort}
+                    onChange={e => setOpenSort(e.target.value)}
+                    style={{ padding: '4px 8px', borderRadius: 'var(--radius)', border: '1px solid var(--color-border)', fontSize: 11, fontFamily: 'var(--font-mono)', background: 'var(--color-bg)', color: 'var(--color-text-primary)', cursor: 'pointer' }}
+                  >
+                    <option value="votes">Sort: Most Upvoted</option>
+                    <option value="newest">Sort: Newest First</option>
+                    <option value="oldest">Sort: Oldest First</option>
+                  </select>
+                </div>
                 {openQueries.length === 0 && (
                   <div className="empty-state">
                     <div style={{ fontSize: 36, marginBottom: 8 }}>💬</div>
                     <strong>No open queries with answers yet</strong>
-                    Be the first to submit an answer in the Tracker tab.
+                    Be the first to submit an answer in the Resolver tab.
                   </div>
                 )}
                 {openQueries.map(issue => (
-                  <OpenQueryCard key={issue._id} issue={issue} currentUser={user} onVote={() => loadOpenQueries()} />
+                  <OpenQueryCard 
+                    key={issue._id} 
+                    issue={issue} 
+                    currentUser={user} 
+                    onVote={(updatedIssue) => {
+                      if (updatedIssue) {
+                        if (updatedIssue.status === 'Resolved') {
+                          setOpenQueries(prev => prev.filter(q => q._id !== updatedIssue._id));
+                        } else {
+                          setOpenQueries(prev => prev.map(q => q._id === updatedIssue._id ? updatedIssue : q));
+                        }
+                      } else {
+                        loadOpenQueries();
+                      }
+                    }} 
+                  />
                 ))}
               </div>
             )}
