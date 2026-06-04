@@ -182,7 +182,7 @@ export default function TrackerPage() {
                 const isExpanded = !!expandedIssues[issue._id];
                 const rowStyle = {
                   cursor: 'pointer',
-                  ...(stale ? { background: 'var(--color-red-light)', borderLeft: '4px solid var(--color-red)' } : {}),
+                  ...(stale ? { background: 'var(--color-amber-bg)', borderLeft: '3px solid var(--color-amber)' } : {}),
                   ...(isExpanded ? { borderBottom: 'none' } : {})
                 };
                 return (
