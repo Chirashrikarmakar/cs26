@@ -62,6 +62,18 @@ router.get('/baseline', async (req, res) => {
   }
 });
 
+router.get('/stale-count', async (req, res) => {
+  try {
+    const count = await OAQIssue.countDocuments({
+      status: 'Open',
+      escalationReason: 'STALE'
+    });
+    res.json({ count });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 router.post('/seed-baseline', auth, requireRole('admin', 'superadmin'), async (req, res) => {
   try {
     await OAQIssue.deleteMany({ isBaseline: true });
@@ -346,7 +358,8 @@ router.post('/', auth, async (req, res) => {
       issueId,
       queryText,
       categoryTag,
-      raisedBy: req.user._id
+      raisedBy: req.user._id,
+      lastActivityAt: new Date()
     });
 
     await awardSP(
@@ -462,7 +475,7 @@ router.post('/issues/:id/reply', auth, async (req, res) => {
 
     const updatedIssue = await OAQIssue.findByIdAndUpdate(
       req.params.id,
-      { $push: { communityReplies: { repliedBy: req.user._id, replyText: answer, isAcceptedFirst: false } } },
+      { $push: { communityReplies: { repliedBy: req.user._id, replyText: answer, isAcceptedFirst: false } }, $set: { lastActivityAt: new Date(), priority: 'NORMAL', escalationReason: null } },
       { new: true }
     ).populate('communityReplies.repliedBy', 'name role');
 
@@ -499,6 +512,7 @@ router.patch('/issues/:id/replies/:replyId/vote', auth, async (req, res) => {
       reply.upvotes = (reply.upvotes || 0) + 1;
     }
 
+    issue.lastActivityAt = new Date();
     await issue.save();
 
     const promoted = await checkAutoPromote(issue);
@@ -540,7 +554,7 @@ router.post('/issues/:id/community-reply', auth, async (req, res) => {
     if (!answer?.trim()) return res.status(400).json({ message: 'Answer cannot be empty' });
     const updatedIssue = await OAQIssue.findByIdAndUpdate(
       req.params.id,
-      { $push: { communityReplies: { repliedBy: req.user._id, replyText: answer } } },
+      { $push: { communityReplies: { repliedBy: req.user._id, replyText: answer } }, $set: { lastActivityAt: new Date(), priority: 'NORMAL', escalationReason: null, staleFlaggedAt: null } },
       { new: true }
     );
 
@@ -686,6 +700,7 @@ router.patch('/issues/:id/vote', auth, async (req, res) => {
       }
     }
 
+    issue.lastActivityAt = new Date();
     await issue.save();
 
     if (spDelta !== 0 && creatorId) {

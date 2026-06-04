@@ -58,6 +58,8 @@ mongoose
     console.log('[DB] MongoDB connected');
     server.listen(process.env.PORT || 5000, () => {
       console.log(`[SERVER] running on port ${process.env.PORT || 5000}`);
+      const staleWatcher = require('./services/staleWatcher');
+      staleWatcher.start(io);
     });
   })
   .catch(err => {

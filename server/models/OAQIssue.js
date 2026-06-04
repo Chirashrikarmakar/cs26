@@ -35,6 +35,9 @@ const OAQIssueSchema = new Schema({
   lockedBy:     { type: ObjectId, ref: 'User', default: null },
   lockExpiry:   { type: Date, default: null },
   duplicateOf:  { type: ObjectId, ref: 'OAQIssue', default: null },
+  lastActivityAt:    { type: Date, default: Date.now, index: true },
+  staleFlaggedAt:    { type: Date, default: null },
+  escalationReason:  { type: String, enum: ['POPULARITY', 'STALE', 'MENTOR', null], default: null },
   communityReplies: [CommunityReplySchema]
 }, { timestamps: true });
 

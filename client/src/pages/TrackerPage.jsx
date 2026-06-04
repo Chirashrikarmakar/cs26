@@ -9,7 +9,7 @@ import RaiseQueryModal from '../components/RaiseQueryModal';
 const SECTION_LABELS = {
   '01': 'ViBe', '02': 'NOC', '03': 'Teams', '04': 'Onboarding',
   '05': 'Reports', '06': 'Finance', '07': 'Schedule', '08': 'Lab',
-  '09': 'Eval', '10': 'SP', '11': 'Yaksha', '12': 'Tracker', '13': 'General'
+  '09': 'Eval', '10': 'SP', '11': 'Yaksha', '12': 'Resolver', '13': 'General'
 };
 
 function timeAgo(dateStr) {
@@ -26,6 +26,7 @@ function timeAgo(dateStr) {
 }
 
 function isStale(issue) {
+  if (issue.escalationReason === 'STALE') return true;
   const hoursSinceUpdate = (Date.now() - new Date(issue.updatedAt || issue.createdAt).getTime()) / 3600000;
   return hoursSinceUpdate > 48 && (!issue.communityReplies || issue.communityReplies.length === 0);
 }
@@ -119,7 +120,7 @@ export default function TrackerPage() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <div>
             <h1 style={{ fontSize: 18, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 4 }}>
-              OAQ Tracker
+              OAQ Resolver
             </h1>
             <p style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
               FCFS · First-Come First-Served · Open issues earn resolution rights
@@ -189,6 +190,11 @@ export default function TrackerPage() {
                     <tr style={rowStyle} onClick={() => toggleExpand(issue._id)}>
                       <td className="issue-id">#{issue.issueId}</td>
                       <td style={{ maxWidth: 300 }}>
+                        {stale && (
+                          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-red)', marginBottom: 4, letterSpacing: '0.06em' }}>
+                            ⚠️ NEEDS IMMEDIATE ACTION
+                          </div>
+                        )}
                         <span style={{ fontSize: 12, lineHeight: 1.5, fontWeight: isExpanded ? 600 : 400 }}>{issue.queryText}</span>
                         {issue.communityReplies?.length > 0 && (
                           <span style={{ fontSize: 10, color: 'var(--color-text-muted)', display: 'block', marginTop: 2 }}>

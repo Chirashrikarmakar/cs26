@@ -26,6 +26,8 @@ pnpm-debug.log*
 
 # Local dev logs
 vite.log
+*.log
+*.log.err
 
 # Editor / System files
 .DS_Store
@@ -42,3 +44,4 @@ Thumbs.db
 CONTEXT.md
 IMPLEMENTED.md
 SUGGESTION.md
+client/openrouter key.txt
