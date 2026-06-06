@@ -21,6 +21,7 @@ async function buildContext(messages) {
     .limit(6)
     .select('queryText answer categoryTag raisedBy');
 
+    
   if (textResults.length === 0) return null;
 
   const sections = {
